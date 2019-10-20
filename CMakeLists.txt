@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.14)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,6 +11,8 @@ set (
   SOURCES
   "src/shushlang.cpp"
 )
+
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 set(BUILD_TESTS OFF CACHE BOOL "Build tests")
 if (BUILD_TESTS)
@@ -46,4 +48,12 @@ endif() # BUILD_TESTS
 # - - - - - - - - - - - - DEPENDENCIES- - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+add_subdirectory(submodules/shush-logs)
+add_subdirectory(submodules/shush-dump)
+add_subdirectory(submodules/shush-format)
 
+target_link_libraries(shush-logs shush-format)
+target_link_libraries(shush-dump shush-format)
+
+target_link_libraries(${PROJECT_NAME} shush-logs shush-dump)
+include_directories(include)
