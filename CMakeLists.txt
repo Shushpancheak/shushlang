@@ -51,9 +51,11 @@ endif() # BUILD_TESTS
 add_subdirectory(submodules/shush-logs)
 add_subdirectory(submodules/shush-dump)
 add_subdirectory(submodules/shush-format)
+add_subdirectory(submodules/shush-file)
 
 target_link_libraries(shush-logs shush-format)
 target_link_libraries(shush-dump shush-format)
+target_link_libraries(shush-file shush-dump)
 
-target_link_libraries(${PROJECT_NAME} shush-logs shush-dump)
+target_link_libraries(${PROJECT_NAME} shush-logs shush-dump shush-file)
 include_directories(include)

@@ -6,8 +6,6 @@ namespace shush {
 namespace lang {
 
 enum Errc {
-  NO_ERROR            = -2,
-  ASSERTION_FAILED    = -1,
   NO_FILE_NAME_GIVEN  = 0,
   COULD_NOT_OPEN_FILE = 1,
   FILE_SIZE_TOO_BIG   = 2
