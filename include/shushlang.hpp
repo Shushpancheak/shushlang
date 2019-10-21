@@ -1,14 +1,18 @@
 #pragma once
 #include "shush-logs.hpp"
 #include "shush-dump.hpp"
+#include "shush-file.hpp"
 
 namespace shush {
 namespace lang {
 
+inline const std::string VERSION = "0.0.1";
+
+static char dump_error_name_buffer[70];
+
 enum Errc {
-  NO_FILE_NAME_GIVEN  = 0,
-  COULD_NOT_OPEN_FILE = 1,
-  FILE_SIZE_TOO_BIG   = 2
+  NO_FILE_NAME_GIVEN,
+  UNKNOWN_EXTENSION
 };
 
 /**
@@ -16,11 +20,17 @@ enum Errc {
  */
 class ShushasmCompiler {
 public:
+  ShushasmCompiler(const char* file_name);
+  ~ShushasmCompiler();
 
-private:
+  void Compile();
+  
   void Ok();
   const char* GetDumpMessage(int errc);
+  const char* GetErrorName(int errc);
 
+private:
+  char* text;
 };
 
 /**
@@ -28,12 +38,33 @@ private:
  */
 class ShushCompiler {
 public:
+  ShushCompiler(const char* file_name);
+  ~ShushCompiler();
 
-private:
+  void Compile();
+  
   void Ok();
   const char* GetDumpMessage(int errc);
+  const char* GetErrorName(int errc);
 
+private:
+  char* text;
 };
+
+/**
+ * Call from main()
+ */
+struct CommonCompiler {
+  void Ok();
+  const char* GetDumpMessage(int errc);
+  const char* GetErrorName(int errc);
+  void StartCompiling(int argc, char** argv);
+
+private:
+  const char* GetExtension(const char* file_name);
+};
+
+const char* GetErrorName(int errc);
 
 }
 }
