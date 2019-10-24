@@ -20,8 +20,10 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 # - - - - - - - - - - - - - PYTHON- - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-execute_process(COMMAND python test.py
-    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+execute_process(
+  COMMAND python generate.py
+  WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/inc
+)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - GTEST INITIALIZATION- - - - - - - - - - - - - - - -
