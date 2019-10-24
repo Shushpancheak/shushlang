@@ -200,7 +200,7 @@ void shush::lang::CommonCompiler::StartCompiling(int argc, char** argv) {
 char* shush::lang::GetExtension(char* file_name) {
   for (int i = static_cast<int>(strlen(file_name)) - 1; i >= 0; --i) {
     if (file_name[i] == '.') {
-      return file_name + i;
+      return file_name + i + 1;
     }
   }
   return nullptr;
