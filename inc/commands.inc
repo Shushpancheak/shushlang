@@ -1,7 +1,7 @@
 if (false) {}
  else if (!strcmp(command, "push")) {
          command_buffer[0] = 0;
-         memcpy(command_buffer + 1 , &strtod(text + i + 1 , &end_ptr, 10), sizeof(double));
+         double val = strtod(text + i + 1 , &end_ptr); memcpy(command_buffer + 1 , &val, sizeof(double));
 
          compiled_file.Write(command_buffer, 1  + sizeof(double));
          i += 0 + sizeof(double);
@@ -10,7 +10,7 @@ if (false) {}
          char reg[3] {};
          memcpy(reg, text + i + 1 , 3);
          char reg_n = GetRegistryByteCode(reg);
-         UMEASSERT(reg_n != -1, error_pos = i, UNKNOWN_REGISTRY);
+         UEASSERT(reg_n != -1, error_pos_ = i, UNKNOWN_REGISTRY);
          memcpy(command_buffer + 1 , &reg_n, sizeof(char));
 
          compiled_file.Write(command_buffer, 1  + 3);
@@ -42,9 +42,9 @@ if (false) {}
          i += 0;
 } else if (!strcmp(command, "goto")) {
          command_buffer[0] = 32;
-         memcpy(label_ref[label_refs_count].str, text + i + 1 , GetEndOfWordInText(text + i + 1 ) - i - 1);
+         memcpy(label_ref[label_refs_count].str, text + i + 1 , GetEndOfWordInText(i + 1 ) - i - 1);
          label_ref[label_refs_count++].byte_id = compiled_file.GetCurrentFilePos() + 1 ;
-         memcpy(command_buffer + 1 , &0UL, sizeof(size_t));
+         size_t zero = 0; memcpy(command_buffer + 1 , &zero, sizeof(size_t));
 
          compiled_file.Write(command_buffer, 1  + sizeof(size_t));
          i += 0 + sizeof(size_t);
@@ -64,5 +64,5 @@ if (false) {}
          compiled_file.Write(command_buffer, 1 );
          i += 0;
 } else {
-    UEASSERT(true, error_pos = i, UNKNOWN_COMMAND);
+    UEASSERT(false, error_pos_ = i, UNKNOWN_COMMAND);
 }

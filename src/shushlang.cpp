@@ -183,7 +183,7 @@ void shush::lang::CommonCompiler::StartCompiling(int argc, char** argv) {
 
   const char* extension = GetExtension(argv[1]);
 
-  UMASSERT(extension && (extension == "shush" || extension == "shushasm"), UNKNOWN_EXTENSION);
+  UMASSERT(extension, UNKNOWN_EXTENSION);
 
   if (!strcmp(extension, "shush")) {
     ShushCompiler sh_c(argv[1]);
@@ -191,6 +191,8 @@ void shush::lang::CommonCompiler::StartCompiling(int argc, char** argv) {
   } else if (!strcmp(extension, "shushasm")) {
     ShushasmCompiler shasm_c(argv[1]);
     shasm_c.Compile();
+  } else {
+    UMASSERT(false, UNKNOWN_EXTENSION);
   }
 }
 
