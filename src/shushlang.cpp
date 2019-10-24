@@ -5,6 +5,9 @@ int main(int argc, char** argv) {
   try {
     std::cout << "shushlang version: " << shush::lang::VERSION << std::endl;
     shush::lang::CommonCompiler cc;
+    argv[1] = new char[40];
+    argc++;
+    strcpy(argv[1], "factorial.shushasm");
     cc.StartCompiling(argc, argv);
     } catch (shush::dump::Dump& dump) {
     shush::dump::HandleFinalDump(dump);
@@ -32,7 +35,7 @@ shush::lang::ShushasmCompiler::~ShushasmCompiler() {
 
 void shush::lang::ShushasmCompiler::Compile() {
   ChangeExtension(file_name, "shushexe");
-  file::File compiled_file(file_name, "rwb");
+  file::File compiled_file(file_name, "w+b");
 
   // First pass, not referencing labels.
   for (size_t i = 0; i < file_size; ++i) {
