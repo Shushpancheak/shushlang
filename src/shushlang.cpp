@@ -3,11 +3,10 @@
 
 int main(int argc, char** argv) {
   try {
-  std::cout << "shushlang version: " << shush::lang::VERSION << std::endl;
-  shush::lang::CommonCompiler cc;
-  cc.StartCompiling(argc, argv);
-
-  } catch (shush::dump::Dump& dump) {
+    std::cout << "shushlang version: " << shush::lang::VERSION << std::endl;
+    shush::lang::CommonCompiler cc;
+    cc.StartCompiling(argc, argv);
+    } catch (shush::dump::Dump& dump) {
     shush::dump::HandleFinalDump(dump);
   }
   return 0;
@@ -18,8 +17,9 @@ shush::lang::ShushasmCompiler::ShushasmCompiler(const char* file_name) {
   strcpy(this->file_name, file_name);
 
   file::File file(file_name, "r");
-  const size_t file_size = file.GetFileSize();
+  file_size = file.GetFileSize();
   text = new char[file_size];
+  end_ptr = text;
 
   file.Read(text, file_size);
 }
@@ -32,65 +32,48 @@ shush::lang::ShushasmCompiler::~ShushasmCompiler() {
 
 void shush::lang::ShushasmCompiler::Compile() {
   ChangeExtension(file_name, "shushexe");
-  file::File compiled_file(file_name, "wb");
+  file::File compiled_file(file_name, "rwb");
 
-  // TODO make it custom and real map.
-
-  // contains name of a label and byte id where it points to
-  Label labels    [LABELS_MAX_COUNT] {};
-  size_t labels_count = 0;
-  // contains name of a label and the place where it should be substituted.
-  Label label_ref [LABELS_REFS_MAX_COUNT] {};
-  size_t label_res_count = 0;
-  // if == 0, then last character was of non command nature.
-  size_t command_start = 0;
-  // Command and arguments buffer in executable form.
-  char command_buffer[COMMAND_MAX_SIZE];
-  // End ptr for strtol.
-  char* end_ptr = nullptr;
-  // Tmp arguments.
-  int64_t val = 0;
-  uint8_t reg = 0;
-
-  // First pass
-  for (size_t i = 0; text[i] != '\0'; ++i) {
-    if (command_start == 0 &&
-        (isalpha(text[i]) || text[i] == '<' ||
-         text[i] == '>'   || text[i] == '=')) {
+  // First pass, not referencing labels.
+  for (size_t i = 0; i < file_size; ++i) {
+    // command_start == 0 -- when last char was whitespace.
+    if (command_start == 0 && !isspace(text[i])) {
       command_start = i;
-    } else if (command_start != 0 && text[i] == ' ') {
-      char command[COMMAND_MAX_SIZE] {};
+    } else if (command_start != 0 && isspace(text[i])) {
+      UEASSERT(i - command_start > COMMAND_MAX_SIZE, error_pos_ = i, 
+               UNKNOWN_COMMAND);
       memcpy(command, text + command_start, i - command_start);
 
-      if (!strcmp(command, "push")) {
-        end_ptr = text + i + 1;
-        val = strtoll(text + i + 1, &end_ptr, 10);
-        i = end_ptr - text;
+      // Checking if it is a label
+      if (command[i - 1] == ':') {
+        command[i - 1] = '\0';
+        strcpy(label[labels_count].str, command);
+        label[labels_count++].byte_id = compiled_file.GetCurrentFilePos();
+        continue;
+      }
 
-        command_buffer[0] = PUSH;
-        memcpy(command_buffer + 1, &val, sizeof(int64_t));
+      #include "commands.inc"
+    } else if (isspace(text[i])) {
+      command_start = 0;
+    }
+  }
 
-        compiled_file.Write(command_buffer, 1 + sizeof(int64_t));
-      } else if (!strcmp(command, "pop")) {
-        end_ptr = text + i + 1;
-        reg = strtoll(text + i + 1, &end_ptr, 10);
-        i = end_ptr - text;
-
-        command_buffer[0] = POP;
-        memcpy(command_buffer + 1, &reg, sizeof(uint8_t));
-
-        compiled_file.Write(command_buffer, 1 + sizeof(uint8_t));
-      } else if (!strcmp(command, "add")) {
-        //end_ptr = text + i + 1;
-        //reg = strtoll(text + i + 1, &end_ptr, 10);
-        //i = end_ptr - text;
-        //
-        //command_buffer[0] = POP;
-        //memcpy(command_buffer + 1, &reg, sizeof(uint8_t));
-        //
-        //compiled_file.Write(command_buffer, 1 + sizeof(uint8_t));
+  // Second pass, filling in addresses of labels
+  // For these purposes, let's replace all null references
+  // to actual label references
+  for (size_t i = 0; i < label_refs_count; ++i) {
+    bool found = false;
+    for (size_t j = 0; j < labels_count; ++j) {
+      if (!strcmp(label[j].str, label_ref[i].str)) {
+        UEASSERT(!found, error_pos_ = label[j].byte_id, 
+                 LABEL_DOUBLE_DECLARATION);
+        found = true;
+        compiled_file.SetFilePos(label_ref[i].byte_id);
+        compiled_file.Write(reinterpret_cast<char*>(&label[j].byte_id), sizeof(size_t));
       }
     }
+
+    UEASSERT(found, error_pos_ = label_ref[i].byte_id, LABEL_UNKNOWN_REFERENCE);
   }
 }
 
@@ -107,6 +90,44 @@ const char* shush::lang::ShushasmCompiler::GetDumpMessage(int errc) {
 
 const char* shush::lang::ShushasmCompiler::GetErrorName(int errc) {
   return shush::lang::GetErrorName(errc);
+}
+
+
+char shush::lang::ShushasmCompiler::GetRegistryByteCode(char* reg_str) {
+  if (!strcmp(reg_str, "rax")) {
+    return 0;
+  } else if (!strcmp(reg_str, "rbx")) {
+    return 1;
+  } else if (!strcmp(reg_str, "rcx")) {
+    return 3;
+  } else if (!strcmp(reg_str, "rdx")) {
+    return 4;
+  } else {
+    return -1;
+  }
+}
+
+
+size_t shush::lang::ShushasmCompiler::GetLineOfPosInText() {
+  MASSERT(text, -1);
+
+  size_t lines_count = 0;
+  for (size_t i = 0; i <= error_pos_; ++i) {
+    if (text[i] == '\n') {
+      ++lines_count;
+    }
+  }
+
+  return lines_count;
+}
+
+
+size_t shush::lang::ShushasmCompiler::GetEndOfWordInText(size_t start) {
+  for (size_t i = start; ; ++i) {
+    if (isspace(text[i])) {
+      return i;
+    }
+  }
 }
 
 
@@ -194,8 +215,17 @@ const char* shush::lang::GetErrorName(int errc) {
       strcpy(dump_error_name_buffer, "The extension of the file provided is unknown to the compiler");
       break;
     }
+    case UNKNOWN_COMMAND : {
+      strcpy(dump_error_name_buffer, "Unknown command was encountered");
+      break;
+    }
+    case UNKNOWN_REGISTRY : {
+      strcpy(dump_error_name_buffer, "Unknown registry was encountered");
+      break;
+    }
     default : {
       strcpy(dump_error_name_buffer, "Unknown error");
+      break;
     }
   }
 

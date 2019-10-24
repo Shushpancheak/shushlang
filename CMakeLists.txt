@@ -16,6 +16,23 @@ set (
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - PYTHON- - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+add_custom_command(
+  OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/inc/commands.inc"
+  COMMAND "${PYTHON_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/inc/generate_commands_inc.py" --argument
+  DEPENDS ${PROJECT_NAME}
+)
+
+add_custom_target(
+  generate_header ALL
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/inc/commands.inc"
+)
+
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/inc/commands.inc DESTINATION inc)
+
 set(BUILD_TESTS OFF CACHE BOOL "Build tests")
 if (BUILD_TESTS)
 
@@ -23,7 +40,7 @@ if (BUILD_TESTS)
 # - - - - - - - - - - - - - GTEST INITIALIZATION- - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-add_subdirectory(googletest)
+add_subdirectory(submodules/googletest)
 enable_testing()
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 include_directories(${gtest_SOURCE_DIR})
@@ -60,4 +77,4 @@ target_link_libraries(shush-dump shush-format)
 target_link_libraries(shush-file shush-dump)
 
 target_link_libraries(${PROJECT_NAME} shush-logs shush-dump shush-file)
-include_directories(include)
+include_directories(include inc)
