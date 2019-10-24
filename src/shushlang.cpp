@@ -43,7 +43,7 @@ void shush::lang::ShushasmCompiler::Compile() {
     if (command_start == 0 && !isspace(text[i])) {
       command_start = i;
     } else if (command_start != 0 && isspace(text[i])) {
-      UEASSERT(i - command_start > COMMAND_MAX_SIZE, error_pos_ = i, 
+      UEASSERT(i - command_start <= COMMAND_MAX_SIZE, error_pos_ = i, 
                UNKNOWN_COMMAND);
       memcpy(command, text + command_start, i - command_start);
 
@@ -87,7 +87,24 @@ void shush::lang::ShushasmCompiler::Ok() {
 
 
 const char* shush::lang::ShushasmCompiler::GetDumpMessage(int errc) {
-  return nullptr;
+  char first_part[] = "shushlang: Source file name: ";
+  const size_t len_1 = strlen(first_part);
+
+  char second_part[] = ", line number: ";
+  const size_t len_2 = strlen(second_part);
+
+  char line_number[10];
+  _itoa(GetLineOfPosInText(), line_number, 10);
+
+  const size_t file_name_len = strlen(file_name);
+
+  strcpy(dump_error_msg_buffer, "shushlang: Source file name: ");
+  strcpy(dump_error_msg_buffer + len_1, file_name);
+
+  strcpy(dump_error_msg_buffer + len_1 + file_name_len, second_part);  
+  strcpy(dump_error_msg_buffer + len_1 + file_name_len + len_2, line_number);
+
+  return dump_error_msg_buffer;
 }
 
 
@@ -226,6 +243,14 @@ const char* shush::lang::GetErrorName(int errc) {
     }
     case UNKNOWN_REGISTRY : {
       strcpy(dump_error_name_buffer, "Unknown registry was encountered");
+      break;
+    }
+    case LABEL_DOUBLE_DECLARATION : {
+      strcpy(dump_error_name_buffer, "A double declaration of a label was detected");
+      break;
+    }
+    case LABEL_UNKNOWN_REFERENCE : {
+      strcpy(dump_error_name_buffer, "A reference to an undefined label was detected");
       break;
     }
     default : {

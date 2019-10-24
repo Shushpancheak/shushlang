@@ -8,8 +8,8 @@ namespace lang {
 
 inline const std::string VERSION = "0.0.1";
 
-static char dump_error_name_buffer[70];
-static char dump_error_msg_buffer[50];
+static char dump_error_name_buffer[70] {};
+static char dump_error_msg_buffer[100] {};
 
 enum Errc {
   NO_FILE_NAME_GIVEN,
