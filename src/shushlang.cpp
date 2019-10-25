@@ -19,10 +19,9 @@ int main(int argc, char** argv) {
 shush::lang::ShushasmCompiler::ShushasmCompiler(const char* file_name) {
   strcpy(this->file_name, file_name);
 
-  file::File file(file_name, "r");
+  file::File file(file_name, "rb");
   file_size = file.GetFileSize();
-  text = new char[file_size];
-  end_ptr = text;
+  text = new char[file_size] {};
 
   file.Read(text, file_size);
 }
@@ -39,13 +38,17 @@ void shush::lang::ShushasmCompiler::Compile() {
 
   // First pass, not referencing labels.
   for (size_t i = 0; i < file_size; ++i) {
-    // command_start == 0 -- when last char was whitespace.
-    if (command_start == 0 && !isspace(text[i])) {
+    if (isspace(text[i])) {
+      text[i] = '\0';
+    }
+
+    // command_start == -1 -- when last char was whitespace.
+    if (command_start == -1 && text[i] != '\0') {
       command_start = i;
-    } else if (command_start != 0 && isspace(text[i])) {
+    } else if (command_start != -1 && text[i] == '\0') {
       UEASSERT(i - command_start <= COMMAND_MAX_SIZE, error_pos_ = i, 
                UNKNOWN_COMMAND);
-      memcpy(command, text + command_start, i - command_start);
+      strcpy(command, text + command_start);
 
       // Checking if it is a label
       if (command[i - 1] == ':') {
@@ -55,9 +58,13 @@ void shush::lang::ShushasmCompiler::Compile() {
         continue;
       }
 
+      // i -- start of an argument or of a new command
+      ++i;
+      command_start = -1;
+
       #include "commands.inc"
-    } else if (isspace(text[i])) {
-      command_start = 0;
+    } else if (text[i] == '\0') {
+      command_start = -1;
     }
   }
 
@@ -143,11 +150,26 @@ size_t shush::lang::ShushasmCompiler::GetLineOfPosInText() {
 
 
 size_t shush::lang::ShushasmCompiler::GetEndOfWordInText(size_t start) {
+  UEASSERT(start < file_size, error_pos_ = start, START_OF_A_WORD_OUT_OF_BOUNDS);
+
   for (size_t i = start; ; ++i) {
     if (isspace(text[i])) {
       return i;
     }
+    if (i == file_size - 1) {
+      return i + 1;
+    }
   }
+}
+
+
+size_t shush::lang::ShushasmCompiler::CopyWord(char* buf, size_t start) {
+  const size_t end = GetEndOfWordInText(start);
+
+  memcpy(buf, text + start, end - start);
+  buf[end - start] = '\0';
+
+  return end;
 }
 
 
@@ -251,6 +273,10 @@ const char* shush::lang::GetErrorName(int errc) {
     }
     case LABEL_UNKNOWN_REFERENCE : {
       strcpy(dump_error_name_buffer, "A reference to an undefined label was detected");
+      break;
+    }
+    case START_OF_A_WORD_OUT_OF_BOUNDS : {
+      strcpy(dump_error_name_buffer, "An attempt to find a word out of text array bounds was made. Perhaps, an argument is missing");
       break;
     }
     default : {

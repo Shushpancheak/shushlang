@@ -6,9 +6,9 @@
 namespace shush {
 namespace lang {
 
-inline const std::string VERSION = "0.0.1";
+inline const std::string VERSION = "0.0.2";
 
-static char dump_error_name_buffer[70] {};
+static char dump_error_name_buffer[100] {};
 static char dump_error_msg_buffer[100] {};
 
 enum Errc {
@@ -17,14 +17,15 @@ enum Errc {
   UNKNOWN_COMMAND,
   UNKNOWN_REGISTRY,
   LABEL_DOUBLE_DECLARATION,
-  LABEL_UNKNOWN_REFERENCE
+  LABEL_UNKNOWN_REFERENCE,
+  START_OF_A_WORD_OUT_OF_BOUNDS
 };
 
 enum {
   LABEL_STR_SIZE = 50,
   LABELS_MAX_COUNT = 100,
   LABELS_REFS_MAX_COUNT = 500,
-  COMMAND_MAX_SIZE = 10
+  COMMAND_MAX_SIZE = 50
 };
 
 struct Label {
@@ -67,10 +68,17 @@ public:
    */
   size_t GetEndOfWordInText(size_t start);
 
+  /**
+   * Copies a word form text to buf.
+   * @return position of element after the end of the word.
+   * @note makes the whitespace as '\0' after the end of the word.
+   */
+  size_t CopyWord(char* buf, size_t start);
+
 private:
   char* text;
   /**
-   * input at first and output later.
+   * input file.
    */
   char file_name[50] {};
   size_t file_size;
@@ -83,13 +91,11 @@ private:
   Label label_ref [LABELS_REFS_MAX_COUNT] {};
   size_t label_refs_count = 0;
   // if == 0, then last character was of non command nature.
-  size_t command_start = 0;
+  int64_t command_start = -1;
   // Copied command
   char command[COMMAND_MAX_SIZE] {};
   // Command and arguments buffer in executable form.
   char command_buffer[COMMAND_MAX_SIZE] {};
-  // End ptr for strtol. Not nullptr because it will be used.
-  char* end_ptr;
 
   size_t error_pos_ = 0;
 };
