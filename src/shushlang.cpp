@@ -32,11 +32,7 @@ shush::lang::ShushasmCompiler::~ShushasmCompiler() {
 }
 
 
-void shush::lang::ShushasmCompiler::Compile() {
-  ChangeExtension(file_name, "shushexe");
-  file::File compiled_file(file_name, "w+b");
-
-  // First pass, not referencing labels.
+void shush::lang::ShushasmCompiler::FirstPass(shush::file::File& compiled_file) {
   for (size_t i = 0; i < file_size; ++i) {
     if (isspace(text[i])) {
       text[i] = '\0';
@@ -55,7 +51,7 @@ void shush::lang::ShushasmCompiler::Compile() {
         command[i - command_start - 1] = '\0';
         strcpy(label[labels_count].str, command);
         label[labels_count++].byte_id = compiled_file.GetCurrentFilePos();
-        command_start = -1;
+        command_start                 = -1;
         continue;
       }
 
@@ -68,10 +64,11 @@ void shush::lang::ShushasmCompiler::Compile() {
       command_start = -1;
     }
   }
+}
 
-  // Second pass, filling in addresses of labels
-  // For these purposes, let's replace all null references
-  // to actual label references
+
+void shush::lang::ShushasmCompiler::FillLabels(
+  shush::file::File& compiled_file) {
   for (size_t i = 0; i < label_refs_count; ++i) {
     bool found = false;
 
@@ -87,6 +84,20 @@ void shush::lang::ShushasmCompiler::Compile() {
 
     UEASSERT(found, error_pos_ = label_ref[i].byte_id, LABEL_UNKNOWN_REFERENCE);
   }
+}
+
+
+void shush::lang::ShushasmCompiler::Compile() {
+  ChangeExtension(file_name, "shushexe");
+  file::File compiled_file(file_name, "w+b");
+
+  // First pass, not referencing labels.
+  FirstPass(compiled_file);
+
+  // Second pass, filling in addresses of labels
+  // For these purposes, let's replace all null references
+  // to actual label references
+  FillLabels(compiled_file);
 }
 
 

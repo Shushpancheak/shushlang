@@ -45,7 +45,9 @@ public:
   ~ShushasmCompiler();
 
   void Compile();
-  
+  void FirstPass(shush::file::File& compiled_file);
+  void FillLabels(shush::file::File& compiled_file);
+
   void Ok();
   const char* GetDumpMessage(int errc);
   const char* GetErrorName(int errc);
