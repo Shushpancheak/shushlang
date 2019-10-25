@@ -1,0 +1,6 @@
+push 1
+in
+
+loop:
+    sub
+    

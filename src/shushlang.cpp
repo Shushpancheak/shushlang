@@ -51,10 +51,11 @@ void shush::lang::ShushasmCompiler::Compile() {
       strcpy(command, text + command_start);
 
       // Checking if it is a label
-      if (command[i - 1] == ':') {
-        command[i - 1] = '\0';
+      if (command[i - command_start - 1] == ':') {
+        command[i - command_start - 1] = '\0';
         strcpy(label[labels_count].str, command);
         label[labels_count++].byte_id = compiled_file.GetCurrentFilePos();
+        command_start = -1;
         continue;
       }
 
@@ -73,6 +74,7 @@ void shush::lang::ShushasmCompiler::Compile() {
   // to actual label references
   for (size_t i = 0; i < label_refs_count; ++i) {
     bool found = false;
+
     for (size_t j = 0; j < labels_count; ++j) {
       if (!strcmp(label[j].str, label_ref[i].str)) {
         UEASSERT(!found, error_pos_ = label[j].byte_id, 
@@ -126,9 +128,9 @@ char shush::lang::ShushasmCompiler::GetRegistryByteCode(char* reg_str) {
   } else if (!strcmp(reg_str, "rbx")) {
     return 1;
   } else if (!strcmp(reg_str, "rcx")) {
-    return 3;
+    return 2;
   } else if (!strcmp(reg_str, "rdx")) {
-    return 4;
+    return 3;
   } else {
     return -1;
   }
