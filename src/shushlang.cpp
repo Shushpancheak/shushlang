@@ -5,11 +5,8 @@ int main(int argc, char** argv) {
   try {
     std::cout << "shushlang version: " << shush::lang::VERSION << std::endl;
     shush::lang::CommonCompiler cc;
-    argv[1] = new char[40];
-    argc++;
-    strcpy(argv[1], "factorial.shushasm");
     cc.StartCompiling(argc, argv);
-    } catch (shush::dump::Dump& dump) {
+  } catch (shush::dump::Dump& dump) {
     shush::dump::HandleFinalDump(dump);
   }
   return 0;
@@ -49,7 +46,7 @@ void shush::lang::ShushasmCompiler::FirstPass(shush::file::File& compiled_file) 
       // Checking if it is a label
       if (command[i - command_start - 1] == ':') {
         command[i - command_start - 1] = '\0';
-        strcpy(label[labels_count].str, command);
+        strcpy(label[labels_count].str, command); // TODO isolate class label.
         label[labels_count++].byte_id = compiled_file.GetCurrentFilePos();
         command_start                 = -1;
         continue;

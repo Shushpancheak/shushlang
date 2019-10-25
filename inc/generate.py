@@ -20,7 +20,7 @@ def new_command(command_name, command_code, types_of_args):
         elif (arg_type == 'size_t'):
             cmd_buffer_adding += "memcpy(command_buffer + 1 {0}, &strtoul(arg, nullptr, 10), sizeof(size_t));\n".format(cmd_cur_arg_pos)
             cmd_cur_arg_pos += " + sizeof(size_t)"
-        elif (arg_type == 'label'):
+        elif (arg_type == 'label'): # TODO isolate memcpys
             cmd_buffer_adding += "strcpy(label_ref[label_refs_count].str, arg);\n"
             cmd_buffer_adding += "         label_ref[label_refs_count++].byte_id = compiled_file.GetCurrentFilePos() + 1 {};\n".format(cmd_cur_arg_pos)
             # Skipping sizeof(size_t) bytes
