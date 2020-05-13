@@ -4,43 +4,43 @@ file = open("commands.inc", "w")
 constants_file = open("command_consts.inc", "w")
 
 def new_command(command_name, command_code, types_of_args):
-    cmd_buffer_adding = "char arg[COMMAND_MAX_SIZE]; size_t new_i = 0;\n         " if len(types_of_args) > 0 else ""
+    cmd_code = "char* arg = text + i; size_t new_i = 0;\n         " if len(types_of_args) > 0 else ""
     cmd_cur_arg_pos   = "" # consists of sizeofs
 
     for arg_type in types_of_args:
-        cmd_buffer_adding += "new_i = CopyWord(arg, i);\n         " # new_i == ind of character after end of arg.
+        cmd_code += "new_i = i + strlen(arg);\n         " # new_i == ind of character after end of arg.
 
         if (arg_type == 'double'):
-            cmd_buffer_adding += "double val = strtod(arg, nullptr); memcpy(command_buffer + 1 {0}, &val, sizeof(double));\n".format(cmd_cur_arg_pos)
+            cmd_code += "double val = strtod(arg, nullptr); memcpy(command_buffer + 1 {0}, &val, sizeof(double));\n".format(cmd_cur_arg_pos)
             cmd_cur_arg_pos += " + sizeof(double)"
         elif (arg_type == 'register'):
-            cmd_buffer_adding += "char reg_n = GetRegistryByteCode(arg);\n         UEASSERT(reg_n != -1, error_pos_ = i, UNKNOWN_REGISTRY);\n"
-            cmd_buffer_adding += "         memcpy(command_buffer + 1 {0}, &reg_n, sizeof(char));\n".format(cmd_cur_arg_pos)
+            cmd_code += "char reg_n = GetRegistryByteCode(arg);\n         UEASSERT(reg_n != -1, error_pos_ = i, UNKNOWN_REGISTRY);\n"
+            cmd_code += "         memcpy(command_buffer + 1 {0}, &reg_n, sizeof(char));\n".format(cmd_cur_arg_pos)
             cmd_cur_arg_pos += " + sizeof(char)"
         elif (arg_type == 'size_t'):
-            cmd_buffer_adding += "memcpy(command_buffer + 1 {0}, &strtoul(arg, nullptr, 10), sizeof(size_t));\n".format(cmd_cur_arg_pos)
+            cmd_code += "memcpy(command_buffer + 1 {0}, &strtoul(arg, nullptr, 10), sizeof(size_t));\n".format(cmd_cur_arg_pos)
             cmd_cur_arg_pos += " + sizeof(size_t)"
         elif (arg_type == 'label'): # TODO isolate memcpys
-            cmd_buffer_adding += "strcpy(label_ref[label_refs_count].str, arg);\n"
-            cmd_buffer_adding += "         label_ref[label_refs_count++].byte_id = compiled_file.GetCurrentFilePos() + 1 {};\n".format(cmd_cur_arg_pos)
+            cmd_code += "strcpy(label_ref[label_refs_count].str, arg);\n"
+            cmd_code += "         label_ref[label_refs_count++].byte_id = compiled_file.GetCurrentFilePos() + 1 {};\n".format(cmd_cur_arg_pos)
             # Skipping sizeof(size_t) bytes
-            cmd_buffer_adding += "         size_t zero = 0; memcpy(command_buffer + 1 {0}, &zero, sizeof(size_t));\n".format(cmd_cur_arg_pos)
+            cmd_code += "         size_t zero = 0; memcpy(command_buffer + 1 {0}, &zero, sizeof(size_t));\n".format(cmd_cur_arg_pos)
             cmd_cur_arg_pos += " + sizeof(size_t)"
         else:
             raise Exception("Unknown arg type: {}".format(arg_type))
 
-        cmd_buffer_adding += "         i = new_i + 1;\n"
+        cmd_code += "         i = new_i + 1;\n"
 
     if len(types_of_args) > 0:
         # So that the i in the end pointed to whitespace before
         # the next command, and `for` could increment it by itself.
-        cmd_buffer_adding += "         --i;\n"
+        cmd_code += "         --i;\n"
 
     file.write(""" else if (!strcmp(command, \"{0}\")) {{
          command_buffer[0] = {1};
          {2}
          compiled_file.Write(command_buffer, 1 {3});
-}}""".format(command_name, command_code, cmd_buffer_adding, cmd_cur_arg_pos)
+}}""".format(command_name, command_code, cmd_code, cmd_cur_arg_pos)
     )
 
     constants_file.write("""

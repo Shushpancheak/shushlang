@@ -13,6 +13,19 @@ int main(int argc, char** argv) {
 }
 
 
+void shush::lang::Labels::AddReference(const char* label_name,
+    const size_t byte_id) {
+  strcpy(label_ref[label_refs_count].str, label_name);
+  label_ref[label_refs_count++].byte_id = byte_id;
+}
+
+
+void shush::lang::Labels::AddLabel(const char* label_name, const size_t byte_id) {
+  strcpy(label[labels_count].str, label_name);
+  label[labels_count++].byte_id = byte_id;
+}
+
+
 shush::lang::ShushasmCompiler::ShushasmCompiler(const char* file_name) {
   strcpy(this->file_name, file_name);
 
@@ -29,7 +42,8 @@ shush::lang::ShushasmCompiler::~ShushasmCompiler() {
 }
 
 
-void shush::lang::ShushasmCompiler::FirstPass(shush::file::File& compiled_file) {
+void shush::lang::ShushasmCompiler::FirstPass(
+    shush::file::File& compiled_file) {
   for (size_t i = 0; i < file_size; ++i) {
     if (isspace(text[i])) {
       text[i] = '\0';
@@ -46,9 +60,8 @@ void shush::lang::ShushasmCompiler::FirstPass(shush::file::File& compiled_file) 
       // Checking if it is a label
       if (command[i - command_start - 1] == ':') {
         command[i - command_start - 1] = '\0';
-        strcpy(label[labels_count].str, command); // TODO isolate class label.
-        label[labels_count++].byte_id = compiled_file.GetCurrentFilePos();
-        command_start                 = -1;
+        labels.AddLabel(command, compiled_file.GetCurrentFilePos());
+        command_start = -1;
         continue;
       }
 
@@ -66,20 +79,22 @@ void shush::lang::ShushasmCompiler::FirstPass(shush::file::File& compiled_file) 
 
 void shush::lang::ShushasmCompiler::FillLabels(
   shush::file::File& compiled_file) {
-  for (size_t i = 0; i < label_refs_count; ++i) {
+  for (size_t i = 0; i < labels.label_refs_count; ++i) {
     bool found = false;
 
-    for (size_t j = 0; j < labels_count; ++j) {
-      if (!strcmp(label[j].str, label_ref[i].str)) {
-        UEASSERT(!found, error_pos_ = label[j].byte_id, 
+    for (size_t j = 0; j < labels.labels_count; ++j) {
+      if (!strcmp(labels.label[j].str, labels.label_ref[i].str)) {
+        UEASSERT(!found, error_pos_ = labels.label[j].byte_id, 
                  LABEL_DOUBLE_DECLARATION);
         found = true;
-        compiled_file.SetFilePos(label_ref[i].byte_id);
-        compiled_file.Write(reinterpret_cast<char*>(&label[j].byte_id), sizeof(size_t));
+        compiled_file.SetFilePos(labels.label_ref[i].byte_id);
+        compiled_file.Write(reinterpret_cast<char*>(&labels.label[j].byte_id),
+                            sizeof(size_t));
       }
     }
 
-    UEASSERT(found, error_pos_ = label_ref[i].byte_id, LABEL_UNKNOWN_REFERENCE);
+    UEASSERT(found, error_pos_ = labels.label_ref[i].byte_id,
+             LABEL_UNKNOWN_REFERENCE);
   }
 }
 
@@ -159,28 +174,39 @@ size_t shush::lang::ShushasmCompiler::GetLineOfPosInText() {
 }
 
 
-size_t shush::lang::ShushasmCompiler::GetEndOfWordInText(size_t start) {
-  UEASSERT(start < file_size, error_pos_ = start, START_OF_A_WORD_OUT_OF_BOUNDS);
+size_t shush::lang::ShushasmCompiler::AddLabelReference(char* command_buffer,
+    size_t label_name_pos,
+    const size_t byte_id) {
+  labels.AddReference(text + label_name_pos, byte_id);
+  size_t zero = 0;
+  memcpy(command_buffer + 1 , &zero, sizeof(size_t));
 
-  for (size_t i = start; ; ++i) {
-    if (isspace(text[i])) {
-      return i;
-    }
-    if (i == file_size - 1) {
-      return i + 1;
-    }
-  }
+  return label_name_pos + strlen(text + label_name_pos);
 }
 
 
-size_t shush::lang::ShushasmCompiler::CopyWord(char* buf, size_t start) {
-  const size_t end = GetEndOfWordInText(start);
-
-  memcpy(buf, text + start, end - start);
-  buf[end - start] = '\0';
-
-  return end;
-}
+// size_t shush::lang::ShushasmCompiler::GetEndOfWordInText(size_t start) {
+//   UEASSERT(start < file_size, error_pos_ = start, START_OF_A_WORD_OUT_OF_BOUNDS);
+// 
+//   for (size_t i = start; ; ++i) {
+//     if (isspace(text[i])) {
+//       return i;
+//     }
+//     if (i == file_size - 1) {
+//       return i + 1;
+//     }
+//   }
+// }
+// 
+// 
+// size_t shush::lang::ShushasmCompiler::CopyWord(char* buf, size_t start) {
+//   const size_t end = GetEndOfWordInText(start);
+// 
+//   memcpy(buf, text + start, end - start);
+//   buf[end - start] = '\0';
+// 
+//   return end;
+// }
 
 
 shush::lang::ShushCompiler::ShushCompiler(const char* file_name) {

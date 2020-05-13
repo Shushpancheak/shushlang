@@ -2,14 +2,16 @@
 #include "shush-logs.hpp"
 #include "shush-dump.hpp"
 #include "shush-file.hpp"
+#include <unordered_map>
 
 namespace shush {
 namespace lang {
 
-inline const std::string VERSION = "0.0.2";
+inline const std::string VERSION = "0.0.3";
 
-static char dump_error_name_buffer[100] {};
-static char dump_error_msg_buffer[100] {};
+inline const size_t DUMP_MESSAGE_SIZE = 100;
+static char dump_error_name_buffer[DUMP_MESSAGE_SIZE] {};
+static char dump_error_msg_buffer[DUMP_MESSAGE_SIZE] {};
 
 enum Errc {
   NO_FILE_NAME_GIVEN,
@@ -31,6 +33,19 @@ enum {
 struct Label {
   char str[LABEL_STR_SIZE] {};
   size_t byte_id;
+};
+
+struct Labels {
+  size_t labels_count = 0;
+  size_t label_refs_count = 0;
+  // contains name of a label and byte id where it points to
+  Label label     [LABELS_MAX_COUNT] {};
+  // contains name of a label and the place where it should be substituted.
+  Label label_ref [LABELS_REFS_MAX_COUNT] {};
+
+  // return position after label name
+  void AddReference(const char* label_name, const size_t byte_id);
+  void AddLabel(const char* label_name, const size_t byte_id);
 };
 
 // Consists of {code_name}_CODE constants.
@@ -65,17 +80,12 @@ public:
   size_t GetLineOfPosInText();
 
   /**
-   * Finds the end (pos of symbol after the word) of a word with given start
-   * position in text[] array.
+   * Adds reference to a label to labels and fills corresponding place
+   * in command_buffer with 0 (command_buffer + 1).
+   *
+   * @return position after the label name
    */
-  size_t GetEndOfWordInText(size_t start);
-
-  /**
-   * Copies a word form text to buf.
-   * @return position of element after the end of the word.
-   * @note makes the whitespace as '\0' after the end of the word.
-   */
-  size_t CopyWord(char* buf, size_t start);
+  size_t AddLabelReference(char* command_buffer, size_t label_name_pos, const size_t byte_id);
 
 private:
   char* text;
@@ -85,19 +95,14 @@ private:
   char file_name[50] {};
   size_t file_size;
 
-  // TODO make it custom and real map.
-  // contains name of a label and byte id where it points to
-  Label label    [LABELS_MAX_COUNT] {};
-  size_t labels_count = 0;
-  // contains name of a label and the place where it should be substituted.
-  Label label_ref [LABELS_REFS_MAX_COUNT] {};
-  size_t label_refs_count = 0;
   // if == 0, then last character was of non command nature.
   int64_t command_start = -1;
   // Copied command
   char command[COMMAND_MAX_SIZE] {};
   // Command and arguments buffer in executable form.
   char command_buffer[COMMAND_MAX_SIZE] {};
+
+  Labels labels;
 
   size_t error_pos_ = 0;
 };

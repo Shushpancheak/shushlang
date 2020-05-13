@@ -1,6 +1,29 @@
-push 1
 in
+push 1
+pop rax
+
+push 0
 
 loop:
-    sub
-    
+    pop rcx
+    pop rbx
+
+    store rax
+    store rbx
+
+    mul
+
+    pop rax
+
+    store rbx
+    push -1
+    add
+
+    push 0
+
+    gotol loop
+
+store rax
+out
+
+end

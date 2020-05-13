@@ -1,0 +1,29 @@
+in in in
+
+push 0
+gotoeq linear
+
+
+
+linear:
+    pop rax
+
+    push 0
+    gotoeq only_c
+
+    
+
+only_c:
+    pop rax
+
+    push 0
+    gotoeq only_c_zero
+
+    push 228
+    out
+    end
+
+    only_c_zero:
+        push 1337
+        out
+        end
